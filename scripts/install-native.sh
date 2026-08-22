@@ -28,7 +28,7 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$APP_DIR" "$DATA_DIR"
 
 python3 -m venv --system-site-packages "$APP_DIR/.venv" 2>/dev/null || python3 -m venv "$APP_DIR/.venv"
 "$APP_DIR/.venv/bin/pip" install --upgrade pip
-"$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt"
+"$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt" gunicorn
 
 install -o root -g root -m 0644 "$APP_DIR/systemd/gptwol.service" /etc/systemd/system/gptwol.service
 install -o root -g root -m 0644 "$APP_DIR/systemd/gptwol-scheduler.service" /etc/systemd/system/gptwol-scheduler.service

@@ -1,0 +1,14 @@
+[Unit]
+Description=GPTWOL scheduled Wake-on-LAN
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/gptwol
+Environment=PYTHONPATH=/opt/gptwol/app
+Environment=GPTWOL_DATA_DIR=/var/lib/gptwol
+Environment=GPTWOL_SCHEDULE_FILE=/var/lib/gptwol/gptwol.cron
+ExecStart=/opt/gptwol/.venv/bin/python -u /opt/gptwol/app/scheduler.py

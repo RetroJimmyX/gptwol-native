@@ -10,6 +10,7 @@ import os
 import ipaddress
 import re
 import fcntl
+import config
 
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(
@@ -25,14 +26,14 @@ tcp_timeout = os.environ.get('TCP_TIMEOUT', 1)
 arp_interface = os.environ.get('ARP_INTERFACE')
 l2_wol_packet = os.environ.get('ENABLE_L2_WOL_PACKET', 'false').lower() == 'true'
 l2_interface = os.environ.get('L2_INTERFACE', 'eth0')
-cron_filename = '/etc/cron.d/gptwol'
-computer_filename = 'db/computers.txt'
+cron_filename = config.SCHEDULE_FILE
+computer_filename = config.LEGACY_COMPUTERS_FILE
 
 app = Flask(__name__, static_folder='templates')
 app.secret_key = os.urandom(24)
 enable_login = os.environ.get('ENABLE_LOGIN', 'false').strip().lower() == 'true'
 
-db_path = '/app/db/computers.db'
+db_path = config.DATABASE_FILE
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)

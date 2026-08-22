@@ -4,6 +4,8 @@ set -eu
 APP_DIR=/opt/gptwol
 DATA_DIR=/var/lib/gptwol
 SERVICE_USER=gptwol
+BOOTSTRAP_VERSION=5.3.8
+FONTAWESOME_VERSION=7.3.1
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "Run this installer with sudo/root." >&2
@@ -23,6 +25,61 @@ fi
 if [ -f /app/db/computers.txt ] && [ ! -f "$DATA_DIR/computers.txt" ]; then
   cp -a /app/db/computers.txt "$DATA_DIR/computers.txt"
 fi
+
+# Docker builds vendor these exact frontend assets into the image. Do the same
+# for native installs so the web UI does not depend on a CDN at runtime.
+apt-get update
+apt-get install -y --no-install-recommends curl unzip
+rm -rf /var/lib/apt/lists/*
+
+mkdir -p "$APP_DIR/app/templates/assets/bootstrap/css" \
+         "$APP_DIR/app/templates/assets/bootstrap/js" \
+         "$APP_DIR/app/templates/assets/fontawesome/css" \
+         "$APP_DIR/app/templates/assets/fontawesome/webfonts"
+
+if [ ! -f "$APP_DIR/app/templates/assets/bootstrap/css/bootstrap.min.css" ] || \
+   [ ! -f "$APP_DIR/app/templates/assets/bootstrap/js/bootstrap.bundle.min.js" ]; then
+  tmpdir=$(mktemp -d)
+  trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+  curl -fsSL "https://github.com/twbs/bootstrap/releases/download/v${BOOTSTRAP_VERSION}/bootstrap-${BOOTSTRAP_VERSION}-dist.zip" \
+    -o "$tmpdir/bootstrap.zip"
+  unzip -q "$tmpdir/bootstrap.zip" \
+    "bootstrap-${BOOTSTRAP_VERSION}-dist/css/bootstrap.min.css" \
+    "bootstrap-${BOOTSTRAP_VERSION}-dist/js/bootstrap.bundle.min.js" \
+    -d "$tmpdir/bootstrap"
+  cp "$tmpdir/bootstrap/bootstrap-${BOOTSTRAP_VERSION}-dist/css/bootstrap.min.css" \
+     "$APP_DIR/app/templates/assets/bootstrap/css/"
+  cp "$tmpdir/bootstrap/bootstrap-${BOOTSTRAP_VERSION}-dist/js/bootstrap.bundle.min.js" \
+     "$APP_DIR/app/templates/assets/bootstrap/js/"
+fi
+
+if [ ! -f "$APP_DIR/app/templates/assets/fontawesome/css/fontawesome.min.css" ] || \
+   [ ! -f "$APP_DIR/app/templates/assets/fontawesome/css/brands.min.css" ] || \
+   [ ! -f "$APP_DIR/app/templates/assets/fontawesome/css/solid.min.css" ]; then
+  tmpdir=$(mktemp -d)
+  trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+  curl -fsSL "https://use.fontawesome.com/releases/v${FONTAWESOME_VERSION}/fontawesome-free-${FONTAWESOME_VERSION}-web.zip" \
+    -o "$tmpdir/fontawesome.zip"
+  unzip -q "$tmpdir/fontawesome.zip" \
+    "fontawesome-free-${FONTAWESOME_VERSION}-web/css/brands.min.css" \
+    "fontawesome-free-${FONTAWESOME_VERSION}-web/css/fontawesome.min.css" \
+    "fontawesome-free-${FONTAWESOME_VERSION}-web/css/solid.min.css" \
+    "fontawesome-free-${FONTAWESOME_VERSION}-web/webfonts/*" \
+    -d "$tmpdir/fontawesome"
+  cp "$tmpdir/fontawesome/fontawesome-free-${FONTAWESOME_VERSION}-web/css/brands.min.css" \
+     "$APP_DIR/app/templates/assets/fontawesome/css/"
+  cp "$tmpdir/fontawesome/fontawesome-free-${FONTAWESOME_VERSION}-web/css/fontawesome.min.css" \
+     "$APP_DIR/app/templates/assets/fontawesome/css/"
+  cp "$tmpdir/fontawesome/fontawesome-free-${FONTAWESOME_VERSION}-web/css/solid.min.css" \
+     "$APP_DIR/app/templates/assets/fontawesome/css/"
+  cp "$tmpdir/fontawesome/fontawesome-free-${FONTAWESOME_VERSION}-web/webfonts/"* \
+     "$APP_DIR/app/templates/assets/fontawesome/webfonts/"
+fi
+
+rm -rf "$APP_DIR/app/templates/assets/bootstrap/bootstrap-${BOOTSTRAP_VERSION}-dist" \
+       "$APP_DIR/app/templates/assets/fontawesome/fontawesome-free-${FONTAWESOME_VERSION}-web"
 
 chown -R "$SERVICE_USER:$SERVICE_USER" "$APP_DIR" "$DATA_DIR"
 

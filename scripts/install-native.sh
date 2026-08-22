@@ -12,11 +12,22 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+SOURCE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+
 if ! id "$SERVICE_USER" >/dev/null 2>&1; then
   useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$SERVICE_USER"
 fi
 
 mkdir -p "$APP_DIR" "$DATA_DIR"
+
+# Stage the checked-out application into the native installation directory.
+# Exclude Git metadata and the development venv; the native installer creates
+# its own venv below. This also makes the installer safe to run from /tmp.
+tar -C "$SOURCE_DIR" \
+  --exclude=.git \
+  --exclude=.venv \
+  -cf - . | tar -C "$APP_DIR" -xf -
 
 if [ -f /app/db/computers.db ] && [ ! -f "$DATA_DIR/computers.db" ]; then
   cp -a /app/db/computers.db "$DATA_DIR/computers.db"

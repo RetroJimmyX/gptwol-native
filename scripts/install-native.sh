@@ -28,7 +28,16 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$APP_DIR" "$DATA_DIR"
 
 python3 -m venv --system-site-packages "$APP_DIR/.venv" 2>/dev/null || python3 -m venv "$APP_DIR/.venv"
 "$APP_DIR/.venv/bin/pip" install --upgrade pip
-"$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt" gunicorn
+"$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/app/requirements.txt"
+
+WAKEONLAN_BIN=$(command -v wakeonlan || true)
+if [ -z "$WAKEONLAN_BIN" ]; then
+  echo "wakeonlan is not installed. Install the wakeonlan package before enabling scheduled WOL." >&2
+  exit 1
+fi
+if [ "$WAKEONLAN_BIN" != /usr/local/bin/wakeonlan ]; then
+  ln -sf "$WAKEONLAN_BIN" /usr/local/bin/wakeonlan
+fi
 
 install -o root -g root -m 0644 "$APP_DIR/systemd/gptwol.service" /etc/systemd/system/gptwol.service
 install -o root -g root -m 0644 "$APP_DIR/systemd/gptwol-scheduler.service" /etc/systemd/system/gptwol-scheduler.service
